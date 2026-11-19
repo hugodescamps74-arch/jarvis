@@ -5077,7 +5077,7 @@ function viewConso(){
 function pctOk(x){var n=(x.ok||0)+(x.ko||0);return n?Math.round(x.ok/n*100):null;}
 function barre(x){var t=(x.ok||0)+(x.ko||0)+(x.ne||0);return '<div class="g5-st3"><i class="ok" style="flex:'+(x.ok||0)+'"></i><i class="ne" style="flex:'+(x.ne||0)+'"></i><i class="ko" style="flex:'+(x.ko||0)+'"></i>'+(!t?'<i class="z"></i>':'')+'</div>';}
 function viewBilan(){
-  var a=agent(),B=a&&a.bilan;
+  var a=agent(),B=a&&a.bilan;if(B){B=Object.assign({},B);if(B.actifs){B.actifs=Object.assign({},B.actifs);delete B.actifs.ETH;}if(B.recent)B.recent=B.recent.filter(function(x){return x.b!=="ETH";});}
   var ORB=(CK.orb?CK.orb.html():"")+(CK.stratA?CK.stratA.html():"")+(CK.stratEth?CK.stratEth.html():"");
   if(!B||!(B.v>=3)||!B.recent||!B.recent.length)return ORB+'<div class="g5-empty"><b>Pas encore de résultat.</b><span>Pour chaque lecture, le Desk suit un seul scénario par actif : le premier qui casse son niveau en clôture 15 min. ✓ si l\'objectif est touché avant le stop (le niveau d\'en face), ✕ si le prix clôture au-delà du stop, neutre si rien en 4 h. Les premiers résultats arrivent 4 h après les premières lectures.</span></div>';
   var tot={ok:0,ko:0,ne:0,nd:0};Object.keys(B.jours||{}).forEach(function(j){var x=B.jours[j];["ok","ko","ne","nd"].forEach(function(k){tot[k]+=x[k]||0;});});
@@ -5200,7 +5200,7 @@ var SYSTEME=[
 "**Contexte** : 3 phrases maximum sur la macro (S&P 500, Nasdaq, or, dollar, taux, VIX) et l'agenda à venir.",
 "Puis pour chaque actif une ligne de titre **ACTIF — tendance 1 h / 4 h / jour**, puis « Haussier si… », « Baissier si… », et « À surveiller : … ».",
 "**Ce qui change tout** : 1 ou 2 phrases.",
-"**Mes stratégies** : 2 à 4 phrases sur les données « mes_strategies » (or ORB Londres, ZEC stratégie A) : si une position est en cours, où en est le prix par rapport à son objectif et à son stop, et ce qui pourrait la menacer d'après le contexte ; sinon, si les conditions du moment sont favorables ou non à un prochain signal. Toujours sans consigne.",
+"**Mes stratégies** : 2 à 4 phrases sur les données « mes_strategies » (or ORB Londres, ZEC et ETH stratégie A) : si une position est en cours, où en est le prix par rapport à son objectif et à son stop, et ce qui pourrait la menacer d'après le contexte ; sinon, si les conditions du moment sont favorables ou non à un prochain signal. Toujours sans consigne.",
 "Termine par une ligne : « Information, pas un conseil en investissement. »"
 ].join("\n");
 
@@ -5250,6 +5250,11 @@ function mesStrategies(){var o={},r2=function(v){return v==null||!isFinite(v)?nu
       position_en_cours:ou?{sens:ou.dir>0?"achat":"vente",entree:r2(ou.entree),objectif:r2(ou.cible),stop:r2(ou.stop)}:null,
       bilan:{trades:Z.length,objectifs:Z.filter(function(x){return x.res==="objectif";}).length,stops:Z.filter(function(x){return x.res==="stop";}).length,net_usd:r2(Z.reduce(function(s,x){return s+x.netUsd;},0))},
       derniers:Z.slice(-5).map(function(x){return {date:new Date(x.ts).toISOString().slice(0,16),sens:x.dir>0?"achat":"vente",entree:r2(x.entree),sortie:r2(x.sortie),issue:x.res};})};}
+  if(CK.stratEth){var Y=CK.stratEth.trades()||[],oe=CK.stratEth.ouvert&&CK.stratEth.ouvert();
+    o.eth_strategie_A={regles:"même stratégie que ZEC : Passion Trade V1.2, V1 - MM7, tendance H4, objectif 3 R, risque 0,5 %",
+      position_en_cours:oe?{sens:oe.dir>0?"achat":"vente",entree:r2(oe.entree),objectif:r2(oe.cible),stop:r2(oe.stop)}:null,
+      bilan:{trades:Y.length,objectifs:Y.filter(function(x){return x.res==="objectif";}).length,stops:Y.filter(function(x){return x.res==="stop";}).length,net_usd:r2(Y.reduce(function(s,x){return s+x.netUsd;},0))},
+      derniers:Y.slice(-5).map(function(x){return {date:new Date(x.ts).toISOString().slice(0,16),sens:x.dir>0?"achat":"vente",entree:r2(x.entree),sortie:r2(x.sortie),issue:x.res};})};}
   return o;}
 function donnees(){return Promise.all(ACTIFS.map(actif)).then(function(a){
   return {heure_paris:new Date().toLocaleString("fr-FR",{timeZone:"Europe/Paris"}),cryptos:a.filter(Boolean),macro:macro(),agenda_24h:agenda(),
@@ -5703,7 +5708,7 @@ function simuler(){
 /* ---------------- Affichage dans le Bilan ---------------- */
 function fp(v){return v==null||!isFinite(v)?"—":nf(v,2);}
 function html(){
-  var h='<section class="g5-box orb-box"><h4>Stratégie A · Passion Trade V1.2 · ETH (M15, tendance H4 · '+esc(MODE)+' · objectif '+P.rr+' R) · en observation</h4>';
+  var h='<section class="g5-box orb-box"><h4>Stratégie A · Passion Trade V1.2 · ETH (M15, tendance H4 · '+esc(MODE)+' · objectif '+P.rr+' R)</h4>';
   if(E.err&&!E.stats)return h+'<p class="g5-note">Données '+esc(P.nom)+' indisponibles pour le moment ('+esc(E.err)+').</p></section>';
   if(!E.stats)return h+'<p class="g5-note">Chargement des données ETH…</p></section>';
   var s=E.stats,p=s.ok+s.ko?Math.round(s.ok/(s.ok+s.ko)*100):null,o=E.ouvert;
@@ -5711,7 +5716,7 @@ function html(){
     '<div class="g5-kpi"><span>RÉSULTAT NET</span><b class="num '+(s.net>0?"up":s.net<0?"dn":"")+'">'+(s.net>0?"+":s.net<0?"−":"")+nf(Math.abs(s.net),2)+' $</b><small>capital 10 000 $, risque 0,5 % par trade, frais 0,04 % et glissement 2 pas inclus</small></div>'+
     '<div class="g5-kpi"><span>FACTEUR DE PROFIT</span><b class="num">'+(s.pf==null?"—":nf(s.pf,2))+'</b><small>gains bruts / pertes brutes</small></div>'+
     '<div class="g5-kpi"><span>EN COURS</span><b class="num">'+(o?(o.dir>0?"▲ achat":"▼ vente"):E.ordre?"ordre en attente":"aucun")+'</b><small>'+(o?"entrée "+fp(o.entree)+" · objectif "+fp(o.cible)+" · stop "+fp(o.stop):E.ordre?(E.ordre.dir>0?"achat":"vente")+" "+(E.ordre.type==="stop"?"stop à "+fp(E.ordre.ref):"au marché"):"en attente d'une cassure dans le sens de la tendance H4")+'</small></div></div>';
-  return h+'<p class="g5-note">En observation : sur 6 mois de test, +10,2 / −5,2 / +10,5 R selon la période (perte sur celle du milieu). Même réglage que ZEC. Rejouée bougie par bougie sur ETHUSDT perpétuel Binance, '+P.jours+' derniers jours, avec les règles d\'exécution de TradingView. Suivi seulement : aucun ordre n\'est passé.</p></section>';}
+  return h+'<p class="g5-note">Même réglage que ZEC. Retenue pour ETH le 19/11 à la place des scénarios de l\'agent (60 jours : +376 $ contre −32 $). Rejouée bougie par bougie sur ETHUSDT perpétuel Binance, '+P.jours+' derniers jours, avec les règles d\'exécution de TradingView. Suivi seulement : aucun ordre n\'est passé.</p></section>';}
 
 function rafraichir(){return charger().then(simuler).catch(function(e){E.err=String(e&&e.message||e);}).then(function(){
   if(CK.veille&&CK.veille.paint)try{CK.veille.paint();}catch(e){}if(CK.journal&&CK.journal.paint)try{CK.journal.paint();}catch(e){}});}
@@ -5748,12 +5753,12 @@ var CK=window.CK,S=CK.S,u=CK.u,esc=u.esc,nf=u.nf;
 
 /* ====================== RÉGLAGES ====================== */
 var FRAIS={taker:0.05,maker:0.02};                 // % par côté, perpétuels crypto
-var COL={BTC:"#F7931A",ETH:"#8C9EFF",SOL:"#14F195",OR:"#E6C35C",ZEC:"#F4B728","ETH obs.":"#8C9EFF"};
+var COL={BTC:"#F7931A",ETH:"#8C9EFF",SOL:"#14F195",OR:"#E6C35C",ZEC:"#F4B728",};
 var ISSUE={ok:["✓","up","Objectif touché"],ko:["✕","dn","Stop touché"],ne:["●","","Neutre : sortie à 4 h"],run:["◌","","En cours"]};
 
 var E={filtre:CK.ls("journal:filtre")||"tous",taille:+(CK.ls("journal:taille")||1000),mode:CK.ls("journal:mode")||"risque",capital:+(CK.ls("journal:capital")||10000)};
 /* Taille « au risque », comme tes robots : chaque trade risque ce % du capital entre l'entrée et le stop */
-var RISQUE={OR:1,ZEC:0.5,"ETH obs.":0.5,BTC:1,ETH:1,SOL:1};
+var RISQUE={OR:1,ZEC:0.5,ETH:0.5,BTC:1,SOL:1};
 function montant(x){if(x.net==null)return null;
   if(E.mode==="fixe")return {net:x.net/100*E.taille,frais:(x.frais||0)/100*E.taille,R:null};
   var sp=x.entree&&x.stop?Math.abs(x.entree-x.stop)/x.entree*100:0;if(!sp)return null;
@@ -5771,7 +5776,7 @@ function agentTrades(){var B=S.agent&&S.agent.bilan;if(!B||!B.recent)return [];
     var brut=x.mv==null?null:+x.mv,sortie=brut==null?null:e*(1+d*brut/100);
     var frais=x.res==="ok"?FRAIS.taker+FRAIS.maker:FRAIS.taker*2;
     return {ts:x.ts,b:x.b,src:"Agent",sens:d,entree:e,stop:x.sl||null,cible:x.cible||null,sortie:sortie,res:x.res,brut:brut,frais:frais,net:brut==null?null:brut-frais,note:x.si||""};})
-    .filter(Boolean);}
+    .filter(function(x){return x&&x.b!=="ETH";});}  /* 19/11 : ETH suit la Stratégie A, plus les scénarios de l'agent */
 function orTrades(){return (CK.orb?CK.orb.trades():[]).map(function(x){
   return {ts:x.ts,b:"OR",src:"ORB Londres",sens:x.s==="hausse"?1:-1,entree:x.entry,stop:x.stop,cible:x.cible,sortie:x.sortie,res:x.res,
     brut:x.res==="run"?null:x.brut,frais:x.frais,net:x.res==="run"?null:x.mv,note:"Range "+fp(x.lo)+" – "+fp(x.hi)+(x.fin?" · clôturé le "+quand(x.fin):"")};});}
@@ -5781,8 +5786,8 @@ function zecTrades(){if(!CK.stratA)return [];var o=CK.stratA.ouvert(),L=CK.strat
   if(o)L.push({ts:o.ts,b:"ZEC",src:"Stratégie A",sens:o.dir,entree:o.entree,stop:o.stop,cible:o.cible,sortie:null,res:"run",brut:null,frais:null,net:null,note:"Position ouverte"});
   return L;}
 function ethObsTrades(){if(!CK.stratEth)return [];var o=CK.stratEth.ouvert(),L=CK.stratEth.trades().map(function(x){
-    return {ts:x.ts,b:"ETH obs.",src:"Stratégie A (en observation)",sens:x.dir,entree:x.entree,stop:x.stop,cible:x.cible,sortie:x.sortie,res:x.res==="objectif"?"ok":"ko",brut:x.brut,frais:x.frais,net:x.netPct,note:"En observation · "+nf(x.r,2)+" R · clôturé le "+quand(x.fin)};});
-  if(o)L.push({ts:o.ts,b:"ETH obs.",src:"Stratégie A (en observation)",sens:o.dir,entree:o.entree,stop:o.stop,cible:o.cible,sortie:null,res:"run",brut:null,frais:null,net:null,note:"Position ouverte"});
+    return {ts:x.ts,b:"ETH",src:"Stratégie A",sens:x.dir,entree:x.entree,stop:x.stop,cible:x.cible,sortie:x.sortie,res:x.res==="objectif"?"ok":"ko",brut:x.brut,frais:x.frais,net:x.netPct,note:"Quantité "+nf(x.qty,3)+" · résultat "+(x.netUsd>0?"+":"")+nf(x.netUsd,2)+" $ sur le capital de la stratégie · "+nf(x.r,2)+" R · clôturé le "+quand(x.fin)};});
+  if(o)L.push({ts:o.ts,b:"ETH",src:"Stratégie A",sens:o.dir,entree:o.entree,stop:o.stop,cible:o.cible,sortie:null,res:"run",brut:null,frais:null,net:null,note:"Position ouverte"});
   return L;}
 function tous(){return agentTrades().concat(orTrades(),zecTrades(),ethObsTrades()).sort(function(a,b){return b.ts-a.ts;});}
 
@@ -5792,24 +5797,24 @@ function resume(L){var ok=0,ko=0,ne=0,run=0,net=0,fr=0;
     var m=montant(x);if(m){net+=m.net;fr+=m.frais;}});
   return {ok:ok,ko:ko,ne:ne,run:run,net:net,frais:fr,pct:ok+ko?Math.round(ok/(ok+ko)*100):null,n:L.length};}
 function paint(){var h=document.getElementById("journal");if(!h)return;
-  var A=tous(),actifs=["tous"].concat(Object.keys(A.reduce(function(o,x){o[x.b]=1;return o;},{OR:1,ZEC:1,"ETH obs.":1,BTC:1,ETH:1,SOL:1})));
-  var MES={OR:1,ZEC:1,"ETH obs.":1},L=E.filtre==="tous"?A.filter(function(x){return MES[x.b];}):A.filter(function(x){return x.b===E.filtre;}),R=resume(L),T=E.taille;
-  var o='<div class="jr-bar">'+actifs.map(function(a){return '<button type="button" class="btn sm'+(a===E.filtre?" primary":"")+'" data-jrf="'+esc(a)+'">'+(a==="tous"?"Mes stratégies":/^(BTC|ETH|SOL)$/.test(a)?esc(a)+" (agent)":a==="ETH obs."?"ETH (Strat. A)":esc(a))+'</button>';}).join("")+
+  var A=tous(),actifs=["tous"].concat(Object.keys(A.reduce(function(o,x){o[x.b]=1;return o;},{OR:1,ZEC:1,ETH:1,BTC:1,SOL:1})));
+  var MES={OR:1,ZEC:1,ETH:1},L=E.filtre==="tous"?A.filter(function(x){return MES[x.b];}):A.filter(function(x){return x.b===E.filtre;}),R=resume(L),T=E.taille;
+  var o='<div class="jr-bar">'+actifs.map(function(a){return '<button type="button" class="btn sm'+(a===E.filtre?" primary":"")+'" data-jrf="'+esc(a)+'">'+(a==="tous"?"Mes stratégies":/^(BTC|SOL)$/.test(a)?esc(a)+" (agent)":esc(a))+'</button>';}).join("")+
     '<label class="jr-taille"><select id="jrM" class="cla-sel"><option value="risque"'+(E.mode==="risque"?" selected":"")+'>Au risque (comme tes robots)</option><option value="fixe"'+(E.mode==="fixe"?" selected":"")+'>Mise fixe par trade</option></select>'+
       (E.mode==="risque"?' Capital <input id="jrC" type="number" min="100" step="100" value="'+E.capital+'"> $':' Mise <input id="jrT" type="number" min="10" step="10" value="'+T+'"> $')+'</label></div>';
   o+='<div class="jr-kpis">'+
     '<div><span>TRADES</span><b class="num">'+R.n+'</b><small>'+R.ok+' ✓ · '+R.ko+' ✕ · '+R.ne+' neutres'+(R.run?' · '+R.run+' en cours':'')+'</small></div>'+
     '<div><span>RÉUSSITE</span><b class="num '+(R.pct>=55?"up":R.pct!=null&&R.pct<45?"dn":"")+'">'+(R.pct==null?"—":R.pct+" %")+'</b><small>objectifs / (objectifs + stops)</small></div>'+
-    '<div><span>RÉSULTAT NET</span><b class="num '+cl(R.net)+'">'+sg(R.net,2)+' $</b><small>'+(E.mode==="risque"?(R.net>=0?"+":"−")+nf(Math.abs(R.net/E.capital*100),2)+' % d\'un capital de '+nf(E.capital,0)+' $ · risque 1 % (or, agent) et 0,5 % (ZEC) par trade · frais déduits, sans réinvestissement':'pour '+nf(T,0)+' $ par trade, frais déduits')+'</small></div>'+
+    '<div><span>RÉSULTAT NET</span><b class="num '+cl(R.net)+'">'+sg(R.net,2)+' $</b><small>'+(E.mode==="risque"?(R.net>=0?"+":"−")+nf(Math.abs(R.net/E.capital*100),2)+' % d\'un capital de '+nf(E.capital,0)+' $ · risque 1 % (or, agent) et 0,5 % (ZEC, ETH) par trade · frais déduits, sans réinvestissement':'pour '+nf(T,0)+' $ par trade, frais déduits')+'</small></div>'+
     '<div><span>FRAIS PAYÉS</span><b class="num">'+nf(R.frais,2)+' $</b><small>commissions et spread</small></div></div>';
   if(!L.length)o+='<div class="cla-aide">Pas encore de trade enregistré'+(E.filtre==="tous"?"":" pour "+esc(E.filtre))+'. Les trades de l\'agent apparaissent 4 h après la lecture qui les a créés ; ceux de l\'or et de ZEC dès le chargement de leur historique.</div>';
   else o+='<div class="jr-wrap"><table class="jr-t"><thead><tr><th>Date (Paris)</th><th>Actif</th><th>Sens</th><th>Entrée</th><th>Stop</th><th>Objectif</th><th>Sortie</th><th>Ce qui s\'est passé</th><th>Brut</th><th>Frais</th><th>Net</th><th>Net $</th></tr></thead><tbody>'+
     L.map(function(x){var r=ISSUE[x.res]||["?","",x.res];
-      return '<tr title="'+esc(x.src+(x.note?" · "+x.note:""))+'"><td class="num">'+quand(x.ts)+'</td><td><b style="color:'+(COL[x.b]||"var(--text)")+'">'+esc(x.b==="ETH obs."?"ETH":x.b)+'</b><small>'+esc(x.src)+'</small></td>'+
+      return '<tr title="'+esc(x.src+(x.note?" · "+x.note:""))+'"><td class="num">'+quand(x.ts)+'</td><td><b style="color:'+(COL[x.b]||"var(--text)")+'">'+esc(x.b)+'</b><small>'+esc(x.src)+'</small></td>'+
         '<td class="'+(x.sens>0?"up":"dn")+'">'+(x.sens>0?"▲ Achat":"▼ Vente")+'</td><td class="num">'+fp(x.entree)+'</td><td class="num">'+fp(x.stop)+'</td><td class="num">'+fp(x.cible)+'</td><td class="num">'+fp(x.sortie)+'</td>'+
         '<td><span class="'+r[1]+'">'+r[0]+'</span> '+esc(r[2])+'</td><td class="num '+cl(x.brut)+'">'+(x.brut==null?"—":sg(x.brut,2)+" %")+'</td><td class="num">'+(x.frais==null?"—":"−"+nf(x.frais,3)+" %")+'</td>'+
         '<td class="num '+cl(x.net)+'"><b>'+(x.net==null?"—":sg(x.net,2)+" %")+'</b></td><td class="num '+cl(x.net)+'"><b>'+(function(){var m=montant(x);return m?sg(m.net,2)+" $"+(m.R!=null?'<small>'+sg(m.R,2)+' R</small>':''):"—";})()+'</b></td></tr>';}).join("")+'</tbody></table></div>';
-  o+='<p class="g5-note">« Mes stratégies » = l\'or (ORB Londres), ZEC (Stratégie A) et ETH (Stratégie A, en observation). BTC, ETH et SOL sont les scénarios de l\'agent, affichés à titre indicatif : leur entrée au seuil embellit les résultats, ils ne sont donc pas comptés dans « Mes stratégies ». Crypto : frais d\'un compte normal sur perpétuels (Binance / OKX) : entrée au marché 0,05 %, sortie à l\'objectif par ordre limite 0,02 %, sortie au stop ou à 4 h au marché 0,05 %. Or : spread 0,20 $ par once et commission 7 $ par lot aller-retour (compte raw). Funding, swap et glissement ne sont pas comptés. BTC, ETH et SOL : scénarios de l\'agent du Desk ; l\'agent garde les 40 derniers. Or : ta stratégie ORB Londres V2.3 sans la session US, 90 derniers jours. ZEC : ta Stratégie A (Passion Trade V1.2, '+esc(CK.stratA?CK.stratA.mode:'')+', objectif 3 R), 60 derniers jours, frais 0,04 % par exécution et glissement 2 pas comme dans le script. Passe la souris sur une ligne pour le détail. Suivi seulement : aucun ordre n\'est passé.</p>';
+  o+='<p class="g5-note">« Mes stratégies » = l\'or (ORB Londres), ZEC et ETH (Stratégie A). BTC et SOL sont les scénarios de l\'agent, affichés à titre indicatif : leur entrée au seuil embellit les résultats, ils ne sont donc pas comptés dans « Mes stratégies ». Crypto : frais d\'un compte normal sur perpétuels (Binance / OKX) : entrée au marché 0,05 %, sortie à l\'objectif par ordre limite 0,02 %, sortie au stop ou à 4 h au marché 0,05 %. Or : spread 0,20 $ par once et commission 7 $ par lot aller-retour (compte raw). Funding, swap et glissement ne sont pas comptés. BTC et SOL : scénarios de l\'agent du Desk ; l\'agent garde les 40 derniers. Or : ta stratégie ORB Londres V2.3 sans la session US, 90 derniers jours. ZEC et ETH : ta Stratégie A (Passion Trade V1.2, '+esc(CK.stratA?CK.stratA.mode:'')+', objectif 3 R), 60 derniers jours, frais 0,04 % par exécution et glissement 2 pas comme dans le script. Passe la souris sur une ligne pour le détail. Suivi seulement : aucun ordre n\'est passé.</p>';
   h.innerHTML=o;
   h.querySelectorAll("[data-jrf]").forEach(function(b){b.onclick=function(){E.filtre=b.getAttribute("data-jrf");CK.ls("journal:filtre",E.filtre);paint();};});
   var t=document.getElementById("jrT");if(t)t.onchange=function(){var v=+t.value;if(v>0){E.taille=v;CK.ls("journal:taille",String(v));}paint();};
