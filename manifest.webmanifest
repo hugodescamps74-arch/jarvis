@@ -18,9 +18,9 @@
    "type": "image/png"
   },
   {
-   "src": "jarvis-logo.svg",
-   "sizes": "any",
-   "type": "image/svg+xml"
+   "src": "jarvis-logo.png",
+   "sizes": "1024x1024",
+   "type": "image/png"
   }
  ]
 }
